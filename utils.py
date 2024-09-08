@@ -10,44 +10,44 @@ from lightrag.core.component import Component
 # Procesar archivo CSV
 def process_csv(file_contents):
     df = pd.read_csv(file_contents)
-    df.to_csv('/content/Datos/Respuestas_Pendientes.csv', index=False)
+    df.to_csv("Files/Respuestas_Pendientes.csv", index=False)
     return df
 
 # Buscar fila por nombre
 def search_row_by_name(df, name):
     selected_row = df[df.iloc[:, 1] == name]
-    selected_row.to_csv('/content/Datos/Respuestas_Patron.csv', index=False)
+    selected_row.to_csv("Files/Respuestas_Patron.csv", index=False)
     return selected_row
 
 # Limpiar datos y eliminar filas
 def clean_Data(name, Patron_final):
-    Patron_final.to_csv('/content/Datos/Respuestas_Patron.csv', index=False)
-    df_pendientes = pd.read_csv('/content/Datos/Respuestas_Pendientes.csv')
+    Patron_final.to_csv("Files/Respuestas_Patron.csv", index=False)
+    df_pendientes = pd.read_csv("Files/Respuestas_Pendientes.csv")
     df_pendientes = df_pendientes[df_pendientes.iloc[:, 1] != name]
-    df_pendientes.to_csv('/content/Datos/Respuestas_Pendientes.csv', index=False)
+    df_pendientes.to_csv("Files/Respuestas_Pendientes.csv", index=False)
     return df_pendientes
 
 # Refrescar datos de Respuestas y Patrón
 def refresh_data1():
-    df1 = pd.read_csv('/content/Datos/Respuestas_Pendientes.csv')
-    df2 = pd.read_csv('/content/Datos/Respuestas_Patron.csv')
+    df1 = pd.read_csv("Files/Respuestas_Pendientes.csv")
+    df2 = pd.read_csv("Files/Respuestas_Patron.csv")
     return df1, df2
 
 # Refrescar datos de calificaciones
 def refresh_data2():
-    df3 = pd.read_csv('/content/Calificaciones.csv')
+    df3 = pd.read_csv("Files/Calificaciones.csv")
     return df3
 
 # Función de calificación
 def aniquilar():
     start_ollama_thread()
-    patron = "/content/Datos/Respuestas_Patron.csv"
-    respuestas = "/content/Datos/Respuestas_Pendientes.csv"
+    patron = "Files/Respuestas_Patron.csv"
+    respuestas = "Files/Respuestas_Pendientes.csv"
     datos1 = pd.read_csv(patron, header=None)
     datos2 = pd.read_csv(respuestas, header=None)
 
     rango = len(datos1.columns)
-    output_file = "/content/Calificaciones.csv"
+    output_file = "Files/Calificaciones.csv"
 
     columnas_calificaciones = ['Matricula', 'Nombre'] + [f'Pregunta {i}' for i in range(1, rango - 2)] + [f'Justificación {i}' for i in range(1, rango - 2)]
     filas = []
