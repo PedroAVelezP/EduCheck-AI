@@ -17,7 +17,7 @@ def main():
     if args.preset == 'default':
         print("Iniciando interfaz predeterminada...")
         app = create_default_interface()
-    elif args.ppreset == 'debug':
+    elif args.preset == 'debug':
         print("Iniciando interfaz de depuración...")
         app = create_debug_interface()
 
