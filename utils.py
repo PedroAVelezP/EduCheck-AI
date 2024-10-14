@@ -97,7 +97,7 @@ def aniquilar():
 
             model = {
                     "model_client": OllamaClient(),
-                    "model_kwargs": {"model": "llama3.1:8b"}
+                    "model_kwargs": {"model": "llama3.2"}
                 }
             qa = SimpleQA(**model)
             Entrada = qa(f"""
