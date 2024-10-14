@@ -3,11 +3,6 @@ import numpy as np
 import unicodedata
 import re
 import os
-from ollama_manager import start_ollama_thread
-from gradio.components import Component
-from lightrag.components.model_client import OllamaClient
-from lightrag.core.generator import Generator
-from lightrag.core.component import Component
 
 # Procesar archivo CSV
 def process_csv(file_contents):
