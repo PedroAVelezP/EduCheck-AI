@@ -2,25 +2,36 @@ import pandas as pd
 import numpy as np
 import unicodedata
 import re
+import os
 from ollama_manager import start_ollama_thread
+from gradio.components import Component
 from lightrag.components.model_client import OllamaClient
 from lightrag.core.generator import Generator
 from lightrag.core.component import Component
 
 # Procesar archivo CSV
 def process_csv(file_contents):
-    df = pd.read_csv(file_contents)
-    df.to_csv("Files/Respuestas_Pendientes.csv", index=False)
-    return df
+    try:
+        df = pd.read_csv(file_contents)
+        df.to_csv("Files/Respuestas_Pendientes.csv", index=False)
+        return df
+    except Exception as e:
+        return f"Error al procesar el archivo CSV: {str(e)}"
 
 # Buscar fila por nombre
 def search_row_by_name(df, name):
+    if name not in df.iloc[:, 1].values:
+        return f"Error: El nombre '{name}' no se encuentra en los datos."
+    
     selected_row = df[df.iloc[:, 1] == name]
     selected_row.to_csv("Files/Respuestas_Patron.csv", index=False)
     return selected_row
 
 # Limpiar datos y eliminar filas
 def clean_Data(name, Patron_final):
+    if name not in Patron_final.iloc[:, 1].values:
+        return f"Error: El nombre '{name}' no se encuentra en el patrón de respuestas."
+
     Patron_final.to_csv("Files/Respuestas_Patron.csv", index=False)
     df_pendientes = pd.read_csv("Files/Respuestas_Pendientes.csv")
     df_pendientes = df_pendientes[df_pendientes.iloc[:, 1] != name]
@@ -29,101 +40,115 @@ def clean_Data(name, Patron_final):
 
 # Refrescar datos de Respuestas y Patrón
 def refresh_data1():
-    df1 = pd.read_csv("Files/Respuestas_Pendientes.csv")
-    df2 = pd.read_csv("Files/Respuestas_Patron.csv")
-    return df1, df2
+    try:
+        df1 = pd.read_csv("Files/Respuestas_Pendientes.csv")
+        df2 = pd.read_csv("Files/Respuestas_Patron.csv")
+        return df1, df2
+    except FileNotFoundError as e:
+        return f"Error: {str(e)}"
 
 # Refrescar datos de calificaciones
 def refresh_data2():
-    df3 = pd.read_csv("Files/Calificaciones.csv")
-    return df3
+    try:
+        df3 = pd.read_csv("Files/Calificaciones.csv")
+        return df3
+    except FileNotFoundError:
+        return "Error: No se ha generado el archivo de calificaciones."
 
 # Función de calificación
 def aniquilar():
-    start_ollama_thread()
-    patron = "Files/Respuestas_Patron.csv"
-    respuestas = "Files/Respuestas_Pendientes.csv"
-    datos1 = pd.read_csv(patron, header=None)
-    datos2 = pd.read_csv(respuestas, header=None)
+    try:
+        start_ollama_thread()
+        patron = "Files/Respuestas_Patron.csv"
+        respuestas = "Files/Respuestas_Pendientes.csv"
+        
+        # Validar si los archivos existen
+        if not os.path.exists(patron) or not os.path.exists(respuestas):
+            return "Error: Faltan los archivos de respuestas o el patrón de respuestas."
 
-    rango = len(datos1.columns)
-    output_file = "Files/Calificaciones.csv"
+        datos1 = pd.read_csv(patron, header=None)
+        datos2 = pd.read_csv(respuestas, header=None)
 
-    columnas_calificaciones = ['Matricula', 'Nombre'] + [f'Pregunta {i}' for i in range(1, rango - 2)] + [f'Justificación {i}' for i in range(1, rango - 2)]
-    filas = []
+        rango = len(datos1.columns)
+        output_file = "Files/Calificaciones.csv"
 
-    def remove_accents(input_str):
-        nfkd_form = unicodedata.normalize('NFKD', input_str)
-        return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
+        columnas_calificaciones = ['Matricula', 'Nombre'] + [f'Pregunta {i}' for i in range(1, rango - 2)] + [f'Justificación {i}' for i in range(1, rango - 2)]
+        filas = []
 
-    class SimpleQA(Component):
-        def __init__(self, model_client: OllamaClient, model_kwargs: dict):
-            super().__init__()
-            self.generator = Generator(
-                model_client=model_client,
-                model_kwargs=model_kwargs,
-                template=qa_template,
-            )
+        def remove_accents(input_str):
+            nfkd_form = unicodedata.normalize('NFKD', input_str)
+            return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
 
-        def call(self, input: dict) -> str:
-            return self.generator.call({"input_str": str(input)})
+        class SimpleQA(Component):
+            def __init__(self, model_client: OllamaClient, model_kwargs: dict):
+                super().__init__()
+                self.generator = Generator(
+                    model_client=model_client,
+                    model_kwargs=model_kwargs,
+                    template=qa_template,
+                )
 
-        async def acall(self, input: dict) -> str:
-            return await self.generator.acall({"input_str": str(input)})
+            def call(self, input: dict) -> str:
+                return self.generator.call({"input_str": str(input)})
 
-    for h in range(1, len(datos2)):  # Iterar sobre las filas de Respuestas_Pendientes
-        matricula = datos2.iloc[h, 2]  # Obtener la matrícula desde la columna 3
-        nombre = datos2.iloc[h, 1]  # Obtener el nombre desde la columna 2
-        calificaciones_preguntas = []
-        justificaciones_preguntas = []
+            async def acall(self, input: dict) -> str:
+                return await self.generator.acall({"input_str": str(input)})
 
-        for i in range(3, rango):
-            PRE = datos1.iloc[0, i]
-            RC = datos1.iloc[1, i]
-            RE = datos2.iloc[h, i]
+        for h in range(1, len(datos2)):  # Iterar sobre las filas de Respuestas_Pendientes
+            matricula = datos2.iloc[h, 2]  # Obtener la matrícula desde la columna 3
+            nombre = datos2.iloc[h, 1]  # Obtener el nombre desde la columna 2
+            calificaciones_preguntas = []
+            justificaciones_preguntas = []
 
-            qa_template = """<SYS>
-            You are a helpful assistant. Your task is to evaluate student responses. Below, you will be provided with the following information: the question (PRE), the correct answer (RC), and the student's answer (RE). You should consider the correct answer (RC) as 100 on the grading scale. If the student's answer is completely wrong or if the student attempts to guess with a broad or vague response, you should assign a 0.
+            for i in range(3, rango):
+                PRE = datos1.iloc[0, i]
+                RC = datos1.iloc[1, i]
+                RE = datos2.iloc[h, i]
 
-            Please grade the student's answer on a scale from 0 (Incorrect answer) to 100 (Identical or similar to the indicated answer) and explain the reason for your grade using the following format:
+                qa_template = """<SYS>
+                You are a helpful assistant. Your task is to evaluate student responses. Below, you will be provided with the following information: the question (PRE), the correct answer (RC), and the student's answer (RE). You should consider the correct answer (RC) as 100 on the grading scale. If the student's answer is completely wrong or if the student attempts to guess with a broad or vague response, you should assign a 0.
 
-            ## Calificación: 0-100
-            ## Justificación:
+                Please grade the student's answer on a scale from 0 (Incorrect answer) to 100 (Identical or similar to the indicated answer) and explain the reason for your grade using the following format:
 
-            Your assistance is greatly appreciated, and your accurate evaluation will help in providing better feedback to students. Thank you for your help!
-            </SYS>
-            User: {{input_str}}
-            You:"""
+                ## Calificación: 0-100
+                ## Justificación:
 
-            model = {
+                Your assistance is greatly appreciated, and your accurate evaluation will help in providing better feedback to students. Thank you for your help!
+                </SYS>
+                User: {{input_str}}
+                You:"""
+                
+                # Crear cliente y llamada a SimpleQA
+                model = {
                     "model_client": OllamaClient(),
                     "model_kwargs": {"model": "llama3.2"}
                 }
-            qa = SimpleQA(**model)
-            Entrada = qa(f"""
-                PRE: {PRE}
-                RC: {RC}
-                RE: {RE}
-            """)
-            respuesta_generada = Entrada.data
+                qa = SimpleQA(**model)
+                Entrada = qa(f"""
+                    PRE: {PRE}
+                    RC: {RC}
+                    RE: {RE}
+                """)
+                respuesta_generada = Entrada.data
 
-            print(respuesta_generada)
+                print(respuesta_generada)
 
-            calificacion_match = re.search(r'Calificación: (\d+)', respuesta_generada)
-            justificacion_match = re.search(r'Justificación:\s*(.+)', respuesta_generada, re.DOTALL)
+                calificacion_match = re.search(r'Calificación: (\d+)', respuesta_generada)
+                justificacion_match = re.search(r'Justificación:\s*(.+)', respuesta_generada, re.DOTALL)
 
+                if calificacion_match:
+                    calificacion = int(calificacion_match.group(1))
+                    calificaciones_preguntas.append(calificacion)
 
-            if calificacion_match:
-                calificacion = int(calificacion_match.group(1))
-                calificaciones_preguntas.append(calificacion)
+                if justificacion_match:
+                    justificacion = justificacion_match.group(1).strip()
+                    justificaciones_preguntas.append(justificacion)
 
-            if justificacion_match:
-                justificacion = justificacion_match.group(1).strip()
-                justificaciones_preguntas.append(justificacion)
+            nueva_fila = [matricula, nombre] + calificaciones_preguntas + justificaciones_preguntas
+            filas.append(nueva_fila)
 
-        nueva_fila = [matricula, nombre] + calificaciones_preguntas + justificaciones_preguntas
-        filas.append(nueva_fila)
-
-        df_calificaciones = pd.DataFrame(filas, columns=columnas_calificaciones)
-        df_calificaciones.to_csv(output_file, index=False)
-    return
+            df_calificaciones = pd.DataFrame(filas, columns=columnas_calificaciones)
+            df_calificaciones.to_csv(output_file, index=False)
+        return "Calificación completada."
+    except Exception as e:
+        return f"Error durante el proceso de calificación: {str(e)}"
