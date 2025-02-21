@@ -3,54 +3,11 @@ import numpy as np
 import unicodedata
 import re
 import os
+from ollama_manager import start_ollama_thread
+from lightrag.components.model_client import OllamaClient
+from lightrag.core.generator import Generator
+from lightrag.core.component import Component
 
-# Procesar archivo CSV
-def process_csv(file_contents):
-    try:
-        df = pd.read_csv(file_contents)
-        df.to_csv("Files/Respuestas_Pendientes.csv", index=False)
-        return df
-    except Exception as e:
-        return f"Error al procesar el archivo CSV: {str(e)}"
-
-# Buscar fila por nombre
-def search_row_by_name(df, name):
-    if name not in df.iloc[:, 1].values:
-        return f"Error: El nombre '{name}' no se encuentra en los datos."
-    
-    selected_row = df[df.iloc[:, 1] == name]
-    selected_row.to_csv("Files/Respuestas_Patron.csv", index=False)
-    return selected_row
-
-# Limpiar datos y eliminar filas
-def clean_Data(name, Patron_final):
-    if name not in Patron_final.iloc[:, 1].values:
-        return f"Error: El nombre '{name}' no se encuentra en el patrón de respuestas."
-
-    Patron_final.to_csv("Files/Respuestas_Patron.csv", index=False)
-    df_pendientes = pd.read_csv("Files/Respuestas_Pendientes.csv")
-    df_pendientes = df_pendientes[df_pendientes.iloc[:, 1] != name]
-    df_pendientes.to_csv("Files/Respuestas_Pendientes.csv", index=False)
-    return df_pendientes
-
-# Refrescar datos de Respuestas y Patrón
-def refresh_data1():
-    try:
-        df1 = pd.read_csv("Files/Respuestas_Pendientes.csv")
-        df2 = pd.read_csv("Files/Respuestas_Patron.csv")
-        return df1, df2
-    except FileNotFoundError as e:
-        return f"Error: {str(e)}"
-
-# Refrescar datos de calificaciones
-def refresh_data2():
-    try:
-        df3 = pd.read_csv("Files/Calificaciones.csv")
-        return df3
-    except FileNotFoundError:
-        return "Error: No se ha generado el archivo de calificaciones."
-
-# Función de calificación
 def aniquilar():
     try:
         start_ollama_thread()
