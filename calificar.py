@@ -57,7 +57,7 @@ def aniquilar():
                 RC = datos1.iloc[1, i]
                 RE = datos2.iloc[h, i]
 
-                qa_template = """<SYS>
+                qa_template = f"""<SYS>
                 You are an AI specialized in scoring the closeness between the correct answer (CA) and the given answer (GA), for this you will have to analyze the question that was being asked before getting the given answer. 
                 
                 The output format should be as follows:
@@ -65,9 +65,10 @@ def aniquilar():
                 ###Justification:
                 
                 Consider the initial question to give your final score, since being specialized topics it may be the case that the answer given (GA) is completely correct despite being different from the answer marked as correct (CA), at the same time consider the degree of knowledge that the person seems to have of the topic, since it may be the case where the person tries to guess the correct answer.
-                The question asked was: ¿Qué hormona regula los niveles de glucosa en sangre y dónde se produce?
-                The correct answer should be: La insulina, producida por las células beta del páncreas.
-                The answer given was: insulina
+                
+                The question asked was: {PRE}
+                The correct answer should be: {RC}
+                The answer given was: {RE}
                 
                 </SYS>
                 """
