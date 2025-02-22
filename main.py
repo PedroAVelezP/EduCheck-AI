@@ -1,6 +1,6 @@
 import argparse
-from default_interface import create_default_interface
-from debug_interface import create_debug_interface
+from Interfaces.default_interface import create_default_interface
+from Interfaces.debug_interface import create_debug_interface
 
 def main():
     # Crear un parser de argumentos
