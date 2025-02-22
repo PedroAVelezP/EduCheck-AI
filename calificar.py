@@ -58,35 +58,33 @@ def aniquilar():
                 RE = datos2.iloc[h, i]
 
                 qa_template = """<SYS>
-                You are a helpful assistant. Your task is to evaluate student responses. Below, you will be provided with the following information: the question (PRE), the correct answer (RC), and the student's answer (RE). You should consider the correct answer (RC) as 100 on the grading scale. If the student's answer is completely wrong or if the student attempts to guess with a broad or vague response, you should assign a 0.
-
-                Please grade the student's answer on a scale from 0 (Incorrect answer) to 100 (Identical or similar to the indicated answer) and explain the reason for your grade using the following format:
-
-                ## Calificación: 0-100
-                ## Justificación:
-
-                Your assistance is greatly appreciated, and your accurate evaluation will help in providing better feedback to students. Thank you for your help!
+                You are an AI specialized in scoring the closeness between the correct answer (CA) and the given answer (GA), for this you will have to analyze the question that was being asked before getting the given answer. 
+                
+                The output format should be as follows:
+                ###Score: (0-100)
+                ###Justification:
+                
+                Consider the initial question to give your final score, since being specialized topics it may be the case that the answer given (GA) is completely correct despite being different from the answer marked as correct (CA), at the same time consider the degree of knowledge that the person seems to have of the topic, since it may be the case where the person tries to guess the correct answer.
+                The question asked was: ¿Qué hormona regula los niveles de glucosa en sangre y dónde se produce?
+                The correct answer should be: La insulina, producida por las células beta del páncreas.
+                The answer given was: insulina
+                
                 </SYS>
-                User: {{input_str}}
-                You:"""
+                """
                 
                 # Crear cliente y llamada a SimpleQA
                 model = {
                     "model_client": OllamaClient(),
-                    "model_kwargs": {"model": "llama3.2"}
+                    "model_kwargs": {"model": "deepseek-r1:8b"}
                 }
                 qa = SimpleQA(**model)
-                Entrada = qa(f"""
-                    PRE: {PRE}
-                    RC: {RC}
-                    RE: {RE}
-                """)
+                Entrada = qa(f"")
                 respuesta_generada = Entrada.data
-
+                
                 print(respuesta_generada)
 
-                calificacion_match = re.search(r'Calificación: (\d+)', respuesta_generada)
-                justificacion_match = re.search(r'Justificación:\s*(.+)', respuesta_generada, re.DOTALL)
+                calificacion_match = re.search(r'###Score: (\d+)', respuesta_generada)
+                justificacion_match = re.search(r'###Justification:\s*(.+)', respuesta_generada, re.DOTALL)
 
                 if calificacion_match:
                     calificacion = int(calificacion_match.group(1))
