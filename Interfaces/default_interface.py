@@ -1,5 +1,6 @@
 import gradio as gr
-from utils import process_csv, search_row_by_name, clean_Data, refresh_data1, refresh_data2, aniquilar
+from utils import process_csv, search_row_by_name, clean_Data, refresh_data1, refresh_data2
+from calificar import aniquilar
 
 def create_default_interface():
     with gr.Blocks(title="CALIFICAINATOR 3000") as Cass:
